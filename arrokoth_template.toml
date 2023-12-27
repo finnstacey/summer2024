@@ -1,0 +1,60 @@
+version = 10000
+
+type = '1+1'
+full = true
+
+flags = 'dynamics, ORI, ORQ, ORS, PQM, PQQ, CD'
+
+data = 'setup'
+
+name = ' Wenu - Weeyo'
+
+comment = '486958 Arrokoth - Wenu-Weeyo System'
+
+time_yr = 0
+
+ref = """\
+https://en.wikipedia.org/wiki/486958_Arrokoth
+"""
+
+angles = 'relative'
+
+objects = ['body 1', 'body 2']
+orbits = ['trajectory']
+
+# inner orbit
+['trajectory']
+name = 'Wenu-Weeyo'
+rp_km = 15
+en = 1.0
+anomaly_deg = -160.0
+
+['body 1']
+name = 'Wenu'
+rho = 0.5
+dims_km = [21.20, 19.90, 9.05]
+k = 1.0e-9 # guess
+Q = 100 # guess
+angles = 'relative'
+euler_deg = [0, 0, 0]
+P_d = 0
+orientation_deg = [0, 0, 0]
+J = [0, 0, 1] # this enforces angles relative to J in z-direction (not omega)
+
+['body 2']
+name = 'Weeyo'
+rho = 0.5
+dims_km = [15.75, 13.85, 9.75]
+k = 1.0e-9 # guess
+Q = 100 # guess
+euler_deg = [0, 0, 0]
+P_d = 0
+orientation_deg = [0, 0, 0]
+J = [0, 0, 1] # this enforces angles relative to J in z-direction (not omega)
+
+[vtk]
+#spinscale = 1200
+spinscale = 5000
+#jscale = 5.0e-27
+jscale = 2.0e-26
+lengthscale=4.0e6
