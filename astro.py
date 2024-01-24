@@ -17,6 +17,7 @@ from tqdm import tqdm
 
 template = "~/Monash/summer2024/arrokoth_template.toml"
 template_w = "~/Monash/summer2024/arrokoth_template_w.toml"
+template_monopole = "~/Monash/summer2024/arrokoth_template_monopole.toml"
 
 class Astro(object):
     def save(self, filename):
@@ -104,7 +105,7 @@ class AstroZOrientation(Astro):
         fig.tight_layout()
 
 class AstroYOrientationDist(Astro):
-    def __init__(self, search_space = [(0, 90), (15,25)], res = (2000, 2000)):
+    def __init__(self, search_space = [(0, 90), (7,20)], res = (10, 10)):
         ydeg = np.linspace(search_space[0][0], search_space[0][1], res[0])
         distance = np.linspace(search_space[1][0], search_space[1][1], res[1])
         self.dist = distance
@@ -116,8 +117,8 @@ class AstroYOrientationDist(Astro):
     def create_batch(self, batch):
         with contextlib.redirect_stdout(None):
             ydeg, dist = batch
-            m = M(template_w, update={'trajectory.rp_km': dist, 'body 1.orientation_deg': [0, ydeg, 0]}, silent=True)
-            m.rund(1 * YR, silent=True)
+            m = M(template, update={'trajectory.rp_km': dist, 'body 1.orientation_deg': [0, ydeg, 0]}, silent=True)
+            m.rund(3 * YR, silent=True)
 
             # collision = (m.status == STATUS_COLLIDE)
             # collide = 1 if collision else 0
@@ -130,9 +131,10 @@ class AstroYOrientationDist(Astro):
                 # "collide": collide,
                 "time": m.t[-1],
                 "rp": dist,
+                "erot": m.erot[0, -1],
                 # "radius": m.ro[0,-1],
                 # "velocity": m.vo[0,-1],
-                # "orbits": len(signal.find_peaks(m.ron.flatten())[0])
+                # "orbits": len(orbits)
                 }
         return r
 
@@ -140,7 +142,7 @@ class AstroYOrientationDist(Astro):
         results = []
         items = [(i, j) for i in self.ydeg for j in self.dist]
 
-        with multiprocessing.Pool() as pool, tqdm(total=len(items)) as pbar:
+        with multiprocessing.Pool() as pool, tqdm(total=len(items), miniters=len(items)/100) as pbar:
             start_time = time.time()
             for batch_results in pool.imap_unordered(self.create_batch, items, chunksize=10):
                 results.append(batch_results)
@@ -149,12 +151,11 @@ class AstroYOrientationDist(Astro):
         self.result = results
 
 
-    def plot2(self, plot_orbits=False, plot_eccentricity=False):
+    def plot2(self, plot_orbits=False, plot_erot=False):
         fig, ax = plt.subplots()
         deg_r = np.array([x['ydeg'] for x in self.result])
         dist_r = np.array([x['rp'] for x in self.result])
-        print(dist_r.shape)
-        print(dist_r)
+
         deg = np.unique(deg_r)
         dist = np.unique(dist_r)
         ndist = len(dist)
@@ -168,20 +169,50 @@ class AstroYOrientationDist(Astro):
             orbits[disti, degi] = np.array([x['orbits'] for x in self.result])
             max_orbits = int(np.max(orbits))
             min_orbits = 0
-
+        elif plot_erot:
+            erot = np.ndarray((ndist, ndeg))
+            erot[disti, degi] = np.array([x['erot'] for x in self.result])
 
         time[disti, degi] = np.array([x['time'] for x in self.result])
-        print(time.shape)
+
         if plot_orbits:
             mesh1 = ax.pcolormesh(dist, deg, orbits.T)
             ax.set_xlabel("distance (km)")
             ax.set_ylabel("gamma orientation (degrees)")
             cbar = fig.colorbar(mesh1, ax=ax, location="right", ticks = np.linspace(min_orbits, max_orbits, max_orbits+1), shrink = 0.5, label = "no of orbits before collision")  
+        elif plot_erot:
+            mesh1 = ax.pcolormesh(dist, deg, np.log10(erot.T))
+            ax.set_xlabel("distance (km)")
+            ax.set_ylabel("gamma orientation (degrees)")
+            cbar = fig.colorbar(mesh1, ax=ax, location="right", shrink = 0.5, label = "log rotational energy (ergs)")  
         else:
             mesh1 = ax.pcolormesh(dist, deg, time.T/DAY)
             ax.set_xlabel("distance (km)")
             ax.set_ylabel("gamma orientation (degrees)")
             cbar = fig.colorbar(mesh1, ax=ax, location="right", shrink = 0.5, label = "time to collision (days)")
+            
+    def plot_scatter(self):
+        time = np.array([x['time'] for x in self.result])
+        erot = np.array([x['erot'] for x in self.result])
+        rp = np.array([x['rp'] for x in self.result])
+
+        max_time_i = np.argwhere(time==time.max())
+
+        time = np.delete(time, max_time_i)
+        erot = np.delete(erot, max_time_i) 
+        rp = np.delete(rp, max_time_i)
+
+        # time = np.unique(time_r)
+        # erot = np.unique(erot_r)
+
+        fig, ax = plt.subplots()
+
+        sc = ax.scatter(erot, time/DAY, c=rp)
+        # mesh1 = ax.pcolormesh(erot, time, rp.T)
+        ax.set_xlabel("rotational energy (ergs)")
+        ax.set_ylabel("time (days)")
+        cbar = fig.colorbar(sc, ax=ax, location="right", shrink = 0.5, label = "periapsis distance (km)")
+
         
 # 2d plot of orientation and rotationperiod
 class AstroYOrientationPeriod(Astro):
@@ -649,7 +680,7 @@ class AstroRandOrientationDist(Astro):
         orientations = [euleruniformdeg(rng = self.rng, size=1) for _ in range(self.res)]
         items = [(i, j.flatten()) for i in self.dist for j in orientations]
 
-        with multiprocessing.Pool() as pool, tqdm(total=len(items)) as pbar:
+        with multiprocessing.Pool() as pool, tqdm(total=len(items), miniters=len(items)/100) as pbar:
             start_time = time.time()
             for batch_results in pool.imap_unordered(self.create_batch, items, chunksize=10):
                 results.append(batch_results)
