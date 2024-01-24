@@ -105,7 +105,7 @@ class AstroZOrientation(Astro):
         fig.tight_layout()
 
 class AstroYOrientationDist(Astro):
-    def __init__(self, search_space = [(0, 90), (7,20)], res = (10, 10)):
+    def __init__(self, search_space = [(0, 90), (17,22)], res = (100, 100)):
         ydeg = np.linspace(search_space[0][0], search_space[0][1], res[0])
         distance = np.linspace(search_space[1][0], search_space[1][1], res[1])
         self.dist = distance
