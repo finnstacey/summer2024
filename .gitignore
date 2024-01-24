@@ -2,3 +2,4 @@
 ./*.mp4
 ./*.odt
 ./*.png
+__pycache__/

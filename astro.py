@@ -134,7 +134,7 @@ class AstroYOrientationDist(Astro):
                 "erot": m.erot[0, -1],
                 # "radius": m.ro[0,-1],
                 # "velocity": m.vo[0,-1],
-                # "orbits": len(orbits)
+                "orbits": len(signal.find_peaks(m.ron.flatten())[0])
                 }
         return r
 
@@ -179,7 +179,7 @@ class AstroYOrientationDist(Astro):
             mesh1 = ax.pcolormesh(dist, deg, orbits.T)
             ax.set_xlabel("distance (km)")
             ax.set_ylabel("gamma orientation (degrees)")
-            cbar = fig.colorbar(mesh1, ax=ax, location="right", ticks = np.linspace(min_orbits, max_orbits, max_orbits+1), shrink = 0.5, label = "no of orbits before collision")  
+            cbar = fig.colorbar(mesh1, ax=ax, location="right", shrink = 0.5, label = "no of orbits before collision")  
         elif plot_erot:
             mesh1 = ax.pcolormesh(dist, deg, np.log10(erot.T))
             ax.set_xlabel("distance (km)")
@@ -201,6 +201,10 @@ class AstroYOrientationDist(Astro):
         time = np.delete(time, max_time_i)
         erot = np.delete(erot, max_time_i) 
         rp = np.delete(rp, max_time_i)
+
+        print(len(time))
+        print(len(erot))
+        print(len(rp))
 
         # time = np.unique(time_r)
         # erot = np.unique(erot_r)
