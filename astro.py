@@ -105,7 +105,7 @@ class AstroZOrientation(Astro):
         fig.tight_layout()
 
 class AstroYOrientationDist(Astro):
-    def __init__(self, search_space = [(0, 90), (17,22)], res = (100, 100)):
+    def __init__(self, search_space = [(0, 90), (1,15)], res = (100, 100)):
         ydeg = np.linspace(search_space[0][0], search_space[0][1], res[0])
         distance = np.linspace(search_space[1][0], search_space[1][1], res[1])
         self.dist = distance
@@ -117,7 +117,7 @@ class AstroYOrientationDist(Astro):
     def create_batch(self, batch):
         with contextlib.redirect_stdout(None):
             ydeg, dist = batch
-            m = M(template, update={'trajectory.rp_km': dist, 'body 1.orientation_deg': [0, ydeg, 0]}, silent=True)
+            m = M(template_monopole, update={'trajectory.rp_km': dist, 'body 1.orientation_deg': [0, ydeg, 0]}, silent=True)
             m.rund(3 * YR, silent=True)
 
             # collision = (m.status == STATUS_COLLIDE)
@@ -134,7 +134,7 @@ class AstroYOrientationDist(Astro):
                 "erot": m.erot[0, -1],
                 # "radius": m.ro[0,-1],
                 # "velocity": m.vo[0,-1],
-                "orbits": len(signal.find_peaks(m.ron.flatten())[0])
+                # "orbits": len(signal.find_peaks(m.ron.flatten())[0])
                 }
         return r
 
@@ -163,6 +163,15 @@ class AstroYOrientationDist(Astro):
         time = np.ndarray((ndist, ndeg))
         degi = np.searchsorted(deg, deg_r)
         disti = np.searchsorted(dist, dist_r)
+        # deg_plot = np.ndarray(ndeg + 1)
+        # deg_plot[1:-1] = 0.5*(deg[1:] + deg[:-1])
+        # deg_plot[0] = 2*deg_plot[1] - deg_plot[2]
+        # deg_plot[-1] = 2*deg_plot[-2] - deg_plot[-3]
+    
+        # dist_plot = np.ndarray(ndist + 1)
+        # dist_plot[1:-1] = 0.5*(dist[1:] + dist[:-1])
+        # dist_plot[0] = 2*dist_plot[1] - dist_plot[2]
+        # dist_plot[-1] = 2*dist_plot[-2] - dist_plot[-3]
 
         if plot_orbits:
             orbits = np.ndarray((ndist, ndeg))
